@@ -1,0 +1,138 @@
+service: user-login
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  region: ca-central-1
+  environment: 
+    TABLE_NAME: "user-pool-table"
+    ACCESS_TOKEN_SECRET: "3340691248ce92a2271fe059bfa813fcd7d2d4e53b31f7a82d248f72fe358d6221afc9f8eaf48f5a70ada7403a503600243adbb40ed3976d68b75773313ca1ea" 
+    REFRESH_TOKEN_SECRET: "bd0badd8e18052379657af7d4069c7c20f18b2d587de1ef6d3389485f01a7d43cd69ca6f3b33baf9c3bb0c31b195253accab87941914da4c7f59bd0939789f8d"
+
+functions:
+  createUser:
+    handler: handler.createUser
+    role: 
+      Fn::GetAtt:
+        - createItemRole
+        - Arn
+    events:
+      - http:
+          path: users
+          method: post
+
+  getPosts:
+    handler: handler.getPosts
+    role: 
+      Fn::GetAtt:
+        - getItemRole
+        - Arn
+    events:
+      - http:
+          path: posts
+          method: get
+
+  login:
+    handler: handler.login
+    role: 
+      Fn::GetAtt:
+        - getItemRole
+        - Arn
+    events:
+      - http:
+          path: /users/login
+          method: post
+ 
+resources:
+  Resources:
+
+    userPoolTable:
+      Type: "AWS::DynamoDB::Table"
+      Properties:
+        TableName: ${self:provider.environment.TABLE_NAME}
+        AttributeDefinitions:
+        - AttributeName: "username"
+          AttributeType: "S"
+        KeySchema:
+        - AttributeName: "username"
+          KeyType: "HASH"
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+          
+    createItemRole:
+      Type: AWS::IAM::Role
+      Properties:
+        RoleName: createItemRole
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - lambda.amazonaws.com
+              Action:
+                - sts:AssumeRole
+        Policies:
+          - PolicyName: Policy-createItem
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: 'Allow'
+                  Action:
+                    - dynamodb:PutItem
+                  Resource:
+                    Fn::GetAtt:
+                      - userPoolTable
+                      - Arn
+                - Effect: Allow
+                  Action:
+                    - logs:CreateLogGroup
+                    - logs:CreateLogStream
+                    - logs:PutLogEvents
+                  Resource:
+                    - 'Fn::Join':
+                        - ':'
+                        - - 'arn:aws:logs'
+                          - Ref: 'AWS::Region'
+                          - Ref: 'AWS::AccountId'
+                          - 'log-group:/aws/lambda/*:*:*'
+                        
+    
+    getItemRole:
+      Type: AWS::IAM::Role
+      Properties:
+        RoleName: getItemRole
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - lambda.amazonaws.com
+              Action:
+                - sts:AssumeRole
+        Policies:
+          - PolicyName: Policy-getItem
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: 'Allow'
+                  Action:
+                    - dynamodb:GetItem
+                  Resource:
+                    Fn::GetAtt:
+                      - userPoolTable
+                      - Arn
+                - Effect: Allow
+                  Action:
+                    - logs:CreateLogGroup
+                    - logs:CreateLogStream
+                    - logs:PutLogEvents
+                  Resource:
+                    - 'Fn::Join':
+                        - ':'
+                        - - 'arn:aws:logs'
+                          - Ref: 'AWS::Region'
+                          - Ref: 'AWS::AccountId'
+                          - 'log-group:/aws/lambda/*:*:*'

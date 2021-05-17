@@ -1,0 +1,20 @@
+POST https://014f9hu3h4.execute-api.ca-central-1.amazonaws.com/dev/users
+Content-Type: application/json
+
+{
+    "username": "rick",
+    "password": "password1!"
+}
+###
+
+POST https://014f9hu3h4.execute-api.ca-central-1.amazonaws.com/dev/users/login
+
+{
+    "username": "rick",
+    "password": "password1!"
+}
+
+###
+
+GET https://014f9hu3h4.execute-api.ca-central-1.amazonaws.com/dev/posts
+Authorization:  Bearer eyJhbGciOiJIUzI1NiJ9.cmljaw.JCYkOYsqm6B0BjvxOAf3uBQLFb1n7wOlJEAmfXctns4
